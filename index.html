@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Macomb & Oakland County — Builder Intelligence Report 2025–2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --ink: #1a1410;
+    --cream: #f5f0e8;
+    --parchment: #ede7d9;
+    --gold: #c8962a;
+    --gold-light: #e8c06a;
+    --navy: #1e3352;
+    --border: #c9bfa8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--cream); color: var(--ink); font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.6; }
+
+  .header { background: var(--navy); color: var(--cream); padding: 28px 48px 24px; border-bottom: 4px solid var(--gold); display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+  .header-left h1 { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 900; line-height: 1.1; }
+  .header-left h1 span { color: var(--gold-light); }
+  .header-left p { margin-top: 6px; font-size: 0.75rem; letter-spacing: 2px; text-transform: uppercase; color: #aab5c4; }
+  .header-stats { display: flex; gap: 28px; flex-shrink: 0; flex-wrap: wrap; }
+  .hstat { text-align: center; }
+  .hstat-num { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 700; color: var(--gold-light); line-height: 1; }
+  .hstat-label { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 1.5px; color: #aab5c4; margin-top: 2px; }
+
+  .nav { background: var(--parchment); border-bottom: 1px solid var(--border); display: flex; padding: 0 48px; overflow-x: auto; }
+  .nav-tab { padding: 14px 20px; font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; color: #666; transition: all 0.2s; background: none; border-top: none; border-left: none; border-right: none; }
+  .nav-tab:hover { color: var(--gold); }
+  .nav-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+  .main { padding: 32px 48px; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* MAP */
+  .map-wrap { border: 1px solid var(--border); border-radius: 4px; overflow: hidden; margin-bottom: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+  .map-toolbar { background: var(--ink); color: var(--cream); padding: 10px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+  .map-toolbar-left { font-size: 0.72rem; letter-spacing: 1px; text-transform: uppercase; font-weight: 600; }
+  .map-toolbar-right { display: flex; gap: 6px; flex-wrap: wrap; }
+  .map-filter-btn { padding: 4px 12px; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; border: 1.5px solid rgba(255,255,255,0.25); border-radius: 20px; cursor: pointer; background: transparent; color: rgba(255,255,255,0.7); transition: all 0.15s; }
+  .map-filter-btn:hover, .map-filter-btn.active { background: var(--gold); color: white; border-color: var(--gold); }
+  #live-map { height: 600px; width: 100%; }
+  .map-legend-bar { background: var(--parchment); border-top: 1px solid var(--border); padding: 12px 18px; display: flex; flex-wrap: wrap; gap: 6px 16px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.68rem; font-weight: 500; cursor: pointer; padding: 2px 8px; border-radius: 20px; border: 1px solid transparent; transition: all 0.15s; user-select: none; }
+  .legend-item:hover { border-color: var(--border); background: white; }
+  .legend-item.dimmed { opacity: 0.3; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; border: 1.5px solid rgba(0,0,0,0.12); }
+
+  /* Leaflet popup */
+  .leaflet-popup-content-wrapper { border-radius: 6px !important; box-shadow: 0 4px 24px rgba(0,0,0,0.28) !important; padding: 0 !important; overflow: hidden; border: none !important; }
+  .leaflet-popup-content { margin: 0 !important; width: auto !important; }
+  .leaflet-popup-tip-container .leaflet-popup-tip { background: #1a1410 !important; }
+  .pop-inner { background: #1a1410; color: #f5f0e8; padding: 14px 18px; min-width: 230px; max-width: 290px; }
+  .pop-builder { font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 700; color: #e8c06a; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 6px; }
+  .pop-community { font-size: 0.82rem; font-weight: 600; color: white; margin-bottom: 6px; }
+  .pop-row { display: flex; justify-content: space-between; gap: 12px; padding: 2px 0; font-size: 0.73rem; }
+  .pop-label { color: #9ab; font-size: 0.67rem; text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; }
+  .pop-val { font-weight: 500; text-align: right; color: #dde; }
+  .pop-note { margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 0.69rem; color: #aab5c4; line-height: 1.45; }
+
+  /* BUILDER CARDS */
+  .filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
+  .filter-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: #888; }
+  .filter-btn { padding: 5px 13px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; border: 1.5px solid var(--border); border-radius: 20px; cursor: pointer; background: white; color: #555; transition: all 0.15s; }
+  .filter-btn:hover, .filter-btn.active { background: var(--navy); color: white; border-color: var(--navy); }
+  .builder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 16px; }
+  .builder-card { background: white; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; transition: box-shadow 0.2s; }
+  .builder-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.09); }
+  .builder-card-header { padding: 13px 17px 10px; display: flex; align-items: center; gap: 11px; border-bottom: 1px solid var(--border); }
+  .builder-color-bar { width: 5px; height: 38px; border-radius: 3px; flex-shrink: 0; }
+  .builder-card-name { font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 700; }
+  .builder-card-type { font-size: 0.67rem; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-top: 1px; }
+  .builder-card-body { padding: 13px 17px; }
+  .card-stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .card-stat { background: var(--parchment); border-radius: 3px; padding: 7px 9px; }
+  .card-stat-label { font-size: 0.63rem; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 2px; }
+  .card-stat-value { font-family: 'DM Mono', monospace; font-size: 0.83rem; font-weight: 500; }
+  .card-locations { font-size: 0.73rem; color: #555; line-height: 1.55; }
+  .card-locations strong { display: block; font-size: 0.63rem; text-transform: uppercase; letter-spacing: 1px; color: #999; margin-bottom: 3px; }
+  .card-notes { margin-top: 9px; padding-top: 8px; border-top: 1px solid var(--parchment); font-size: 0.72rem; color: #555; line-height: 1.55; }
+  .county-badge { display: inline-block; font-size: 0.63rem; text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 7px; border-radius: 20px; margin: 1px 2px; font-weight: 600; }
+  .badge-macomb { background: #dbeeff; color: #1a4a7a; }
+  .badge-oakland { background: #e8f5e3; color: #2a5c1a; }
+  .badge-both { background: #f5e8ff; color: #4a1a7a; }
+
+  /* TABLE */
+  .note-box { background: #fffbf0; border: 1px solid var(--gold); border-left: 4px solid var(--gold); border-radius: 3px; padding: 12px 16px; font-size: 0.77rem; color: #5a4a1a; margin-bottom: 20px; }
+  .data-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 4px; background: white; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  thead { background: var(--ink); color: var(--cream); }
+  thead th { padding: 11px 14px; text-align: left; font-size: 0.67rem; text-transform: uppercase; letter-spacing: 1.2px; font-weight: 600; white-space: nowrap; }
+  tbody tr { border-bottom: 1px solid var(--parchment); }
+  tbody tr:hover { background: #faf7f0; }
+  tbody td { padding: 10px 14px; vertical-align: top; }
+  .builder-name-cell { font-weight: 600; display: flex; align-items: center; gap: 7px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; margin-top: 2px; }
+  .price-tag { font-family: 'DM Mono', monospace; font-size: 0.78rem; background: var(--parchment); padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
+
+  /* PRICING */
+  .price-chart-wrap { background: white; border: 1px solid var(--border); border-radius: 4px; padding: 22px; margin-bottom: 24px; }
+  .price-chart-title { font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 700; margin-bottom: 18px; }
+  .price-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .price-bar-label { width: 145px; flex-shrink: 0; font-size: 0.74rem; font-weight: 600; text-align: right; color: #444; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .price-bar-track { flex: 1; height: 22px; background: var(--parchment); border-radius: 2px; position: relative; }
+
+  /* INSIGHTS */
+  .insights-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .insight-card { background: white; border: 1px solid var(--border); border-radius: 4px; padding: 18px; }
+  .insight-icon { font-size: 1.6rem; margin-bottom: 8px; }
+  .insight-title { font-family: 'Playfair Display', serif; font-size: 0.95rem; font-weight: 700; margin-bottom: 7px; }
+  .insight-body { font-size: 0.78rem; color: #555; line-height: 1.6; }
+  .insight-body strong { color: var(--ink); }
+
+  @media (max-width: 768px) {
+    .header { padding: 18px 20px; }
+    .main { padding: 18px 20px; }
+    .nav { padding: 0 16px; }
+    #live-map { height: 420px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>Macomb & Oakland County<br><span>Builder Intelligence Report</span></h1>
+    <p>Competitive Market Analysis · 2025–2026 · Southeast Michigan</p>
+  </div>
+  <div class="header-stats">
+    <div class="hstat"><div class="hstat-num">14+</div><div class="hstat-label">Builders Tracked</div></div>
+    <div class="hstat"><div class="hstat-num">45+</div><div class="hstat-label">Active Communities</div></div>
+    <div class="hstat"><div class="hstat-num">$330K</div><div class="hstat-label">Entry Point</div></div>
+    <div class="hstat"><div class="hstat-num">$950K+</div><div class="hstat-label">High End</div></div>
+  </div>
+</div>
+
+<nav class="nav">
+  <button class="nav-tab active" onclick="switchTab('map',this)">📍 Live Map</button>
+  <button class="nav-tab" onclick="switchTab('builders',this)">🏗 Builder Cards</button>
+  <button class="nav-tab" onclick="switchTab('table',this)">📊 Data Table</button>
+  <button class="nav-tab" onclick="switchTab('pricing',this)">💰 Pricing</button>
+  <button class="nav-tab" onclick="switchTab('insights',this)">💡 Insights</button>
+</nav>
+
+<div class="main">
+
+<div class="tab-panel active" id="tab-map">
+  <div class="map-wrap">
+    <div class="map-toolbar">
+      <span class="map-toolbar-left">📍 Live Map — Click any pin for community details · Zoom & pan freely</span>
+      <div class="map-toolbar-right">
+        <button class="map-filter-btn active" onclick="mapFilterAll(this)">All</button>
+        <button class="map-filter-btn" onclick="mapFilter('macomb',this)">Macomb</button>
+        <button class="map-filter-btn" onclick="mapFilter('oakland',this)">Oakland</button>
+        <button class="map-filter-btn" onclick="mapFilter('national',this)">National</button>
+        <button class="map-filter-btn" onclick="mapFilter('local',this)">Local/Regional</button>
+      </div>
+    </div>
+    <div id="live-map"></div>
+    <div class="map-legend-bar" id="mapLegend"></div>
+  </div>
+</div>
+
+<div class="tab-panel" id="tab-builders">
+  <div class="filter-row">
+    <span class="filter-label">Filter:</span>
+    <button class="filter-btn active" onclick="filterCards('all',this)">All</button>
+    <button class="filter-btn" onclick="filterCards('macomb',this)">Macomb</button>
+    <button class="filter-btn" onclick="filterCards('oakland',this)">Oakland</button>
+    <button class="filter-btn" onclick="filterCards('both',this)">Both Counties</button>
+    <button class="filter-btn" onclick="filterCards('national',this)">National</button>
+    <button class="filter-btn" onclick="filterCards('local',this)">Local/Regional</button>
+  </div>
+  <div class="builder-grid" id="builderGrid"></div>
+</div>
+
+<div class="tab-panel" id="tab-table">
+  <div class="note-box"><strong>Sources:</strong> Builder websites, NewHomeSource, Homes.com, Zillow, The New Home Experts (Rochester Hills). Prices = base/starting as of 2025–2026. "Coming soon" noted where applicable. Last updated June 2026.</div>
+  <div class="data-table-wrap">
+    <table>
+      <thead><tr><th>Builder</th><th>Type</th><th>County</th><th>Key Communities (Active)</th><th>Price Range</th><th>Home Types</th><th>Key Note</th></tr></thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="tab-panel" id="tab-pricing">
+  <div class="price-chart-wrap">
+    <div class="price-chart-title">Starting Price by Builder — Sorted Low to High</div>
+    <div id="priceChart"></div>
+  </div>
+  <div class="price-chart-wrap">
+    <div class="price-chart-title">Market Segment Coverage</div>
+    <div id="tierChart"></div>
+  </div>
+</div>
+
+<div class="tab-panel" id="tab-insights">
+  <div class="insights-grid" id="insightsGrid"></div>
+</div>
+
+</div>
+
+<script>
+const BUILDERS = [
+  // ─── NATIONAL ───────────────────────────────────────────────────────────
+  {
+    name: "Toll Brothers", type: "National Luxury", category: "national",
+    counties: ["oakland"], color: "#c8962a",
+    priceMin: 450000, priceMax: 950000, priceDisplay: "$450K – $950K+",
+    homeTypes: "Single-Family, Condo, Townhome",
+    communities: [
+      { name: "Reserve at West Bloomfield", location: "West Bloomfield Township, Oakland County", lat: 42.5487, lng: -83.3763,
+        price: "$649K – $899K", sqft: "2,530–2,828 sq ft", note: "Single-family luxury — move-in 2025/2026" },
+      { name: "Altair Ridge ★ Coming Summer 2026", location: "Orion Township, Oakland County (N of Buell Rd / W of Baldwin Rd)", lat: 42.7810, lng: -83.2540,
+        price: "From mid-$400Ks", sqft: "3BR townhomes, 2.5–3.5 bath", note: "Low-maintenance townhomes, landscaping & snow removal included" },
+    ],
+    notes: "Luxury focus; #1 Fortune Most Admired Builder 2026. Altair Ridge townhomes open summer 2026. Reserve at West Bloomfield $649K–$899K.",
+    highlights: ["Altair Ridge: mid-$400Ks, 3BR townhomes (summer 2026)", "Reserve at West Bloomfield: $649K–$899K", "#1 Fortune Most Admired Home Builder 2026"],
+  },
+  {
+    name: "Pulte Homes", type: "National Production", category: "national",
+    counties: ["macomb"], color: "#2e7b7a",
+    priceMin: 340000, priceMax: 650000, priceDisplay: "$340K – $650K",
+    homeTypes: "Single-Family, Ranch Condo",
+    communities: [
+      { name: "Deerbrook", location: "Macomb Township", lat: 42.6880, lng: -82.9380,
+        price: "High $400Ks – Mid $600Ks", sqft: "Var.", note: "Single-family — multiple plans" },
+      { name: "Corners at Cherry Glen", location: "Macomb Twp — 23 Mile & Heydenreich Rd", lat: 42.6760, lng: -82.9640,
+        price: "$465K – Low $600Ks", sqft: "1,683–2,309 sq ft", note: "100 ranch-style condos, low-maintenance. Opened late 2024." },
+      { name: "Shelby Twp Condos", location: "Shelby Township, Macomb County", lat: 42.6710, lng: -83.0340,
+        price: "From $340K", sqft: "1,905–2,380 sq ft", note: "Townhomes & condos" },
+      { name: "Lake Orion Community", location: "Lake Orion, Oakland County", lat: 42.7840, lng: -83.2390,
+        price: "TBD", sqft: "Var.", note: "Oakland County presence" },
+    ],
+    notes: "12 communities in Metro Detroit. Corners at Cherry Glen is their flagship Macomb community — 100 ranch homes at 23 Mile & Heydenreich. Shelby Twp from $340K.",
+    highlights: ["Corners at Cherry Glen: 100 ranch homes from $465K", "Deerbrook: high $400s–mid $600s", "Shelby Twp townhomes from ~$340K"],
+  },
+  {
+    name: "M/I Homes", type: "National Production", category: "national",
+    counties: ["macomb","oakland"], color: "#b84c2a",
+    priceMin: 380000, priceMax: 700000, priceDisplay: "$380K – $700K",
+    homeTypes: "Single-Family",
+    communities: [
+      { name: "Olejnik Acres ★ Coming Soon", location: "Macomb Township — Card Road", lat: 42.6850, lng: -82.9280,
+        price: "TBD", sqft: "Var.", note: "Chippewa Valley Schools. Sign up for First Look." },
+      { name: "White Lake / Milford Area", location: "White Lake Township, Oakland County", lat: 42.6560, lng: -83.4950,
+        price: "From ~$400K", sqft: "Var.", note: "Multiple Oakland County communities" },
+      { name: "Shelby Township Community", location: "Shelby Township, Macomb County", lat: 42.6750, lng: -83.0470,
+        price: "TBD", sqft: "Var.", note: "Active Shelby Twp presence" },
+      { name: "Washington Township Community", location: "Washington Township, Macomb County", lat: 42.7330, lng: -83.0180,
+        price: "TBD", sqft: "Var.", note: "Northern Macomb County" },
+    ],
+    notes: "40+ years building; energy-efficient 'Whole Home Building Standards'. Olejnik Acres coming soon in Macomb Twp on Card Rd. Active in Oakland County white lake/Milford area.",
+    highlights: ["Olejnik Acres: Macomb Twp — coming soon", "Oakland County: White Lake/Milford", "Whole Home energy standards, 40 yrs experience"],
+  },
+
+  // ─── LOMBARDO (EXPANDED) ─────────────────────────────────────────────────
+  {
+    name: "Lombardo Homes", type: "Regional — SE Michigan", category: "local",
+    counties: ["macomb","oakland"], color: "#7a5c6e",
+    priceMin: 330000, priceMax: 750000, priceDisplay: "$330K – $750K+",
+    homeTypes: "Single-Family, Condo, Townhome, Ranch",
+    communities: [
+      // Oakland County
+      { name: "Stoney Creek Crossing ★", location: "Oakland Township — N of Buell Rd, W of Rochester Rd (Rochester Schools)", lat: 42.7185, lng: -83.1440,
+        price: "From $689,500", sqft: "~2,500–3,900+ sq ft", note: "~140 homes on 250 acres. Rochester Community Schools. Limited lots as of Feb 2026." },
+      { name: "Preston Corners Vistas", location: "Shelby Township — N of 25 Mile Rd, W of Schoenherr Rd", lat: 42.6860, lng: -83.0550,
+        price: "$525K – $609K", sqft: "1,905–2,380 sq ft", note: "122 acres open space; detached condos. Also Lombardo Preston Corners (single-family) nearby." },
+      { name: "Preston Corners (Single-Family)", location: "Shelby Township — N of 25 Mile, E of Schoenherr", lat: 42.6880, lng: -83.0480,
+        price: "~$500K–$650K", sqft: "Var.", note: "122-acre community with walking paths, gazebo, dog park. Adjacent to Villas." },
+      // Macomb County
+      { name: "Wolverine Country Club Estates", location: "Macomb Township — Utica Community Schools", lat: 42.6610, lng: -82.9910,
+        price: "~$450K–$600K", sqft: "Var.", note: "Near Partridge Creek Mall. Utica Community Schools." },
+      { name: "Windemere Farms II", location: "Macomb Township — Chippewa Valley Schools", lat: 42.6730, lng: -82.9170,
+        price: "$330K – $450K", sqft: "1,345–1,771 sq ft", note: "Ranch & split-level duet condos. Chippewa Valley district." },
+      { name: "Stillwater Crossing", location: "Macomb Township", lat: 42.6620, lng: -82.9450,
+        price: "~$450K–$550K", sqft: "1,850–2,810+ sq ft", note: "Single-family; various plans." },
+      { name: "Pembrooke South", location: "New Haven, Macomb County — near I-94 & Chesterfield", lat: 42.7310, lng: -82.7950,
+        price: "~$380K–$480K", sqft: "1,385–2,750 sq ft", note: "New Haven Community Schools. Ranch & colonial plans." },
+      { name: "Legacy Village Villas", location: "Shelby Township, Macomb County", lat: 42.6640, lng: -83.0440,
+        price: "~$450K–$550K", sqft: "Var.", note: "Maintenance-free villa living." },
+      // Lapeer/Almont — noting for completeness
+      { name: "Pine Crest", location: "Almont Township — S of Hough Rd, W of M-53", lat: 42.9210, lng: -83.0440,
+        price: "From low $500Ks", sqft: "2,242–3,135 sq ft", note: "Almont Community Schools. Ranch & two-story. Near Blake's Orchard." },
+    ],
+    notes: "Family-owned since 1961, ~600 homes/yr, one of SE Michigan's largest builders. 9 active communities tracked across Macomb, Oakland, and Lapeer counties. Stoney Creek Crossing (Rochester Schools) is the flagship Oakland County community at $689K+.",
+    highlights: ["Stoney Creek Crossing: $689K+, Rochester Schools, Oakland Twp", "Windemere Farms II condos from $330K", "Preston Corners Villas Shelby Twp $525K–$609K", "'Anywhere Lombardo' build-on-your-lot program"],
+  },
+
+  // ─── LOCAL/REGIONAL ───────────────────────────────────────────────────────
+  {
+    name: "MJC Companies", type: "Regional — SE Michigan", category: "local",
+    counties: ["macomb","oakland"], color: "#1e3352",
+    priceMin: 352000, priceMax: 973000, priceDisplay: "$352K – $973K",
+    homeTypes: "Single-Family, Condo, Apartment",
+    communities: [
+      { name: "Walden Parc (Apts)", location: "Macomb Township — Romeo Plank S of 22 Mile", lat: 42.6600, lng: -82.9340,
+        price: "From $2,400/mo rent", sqft: "Ranch-style 1,416 sq ft", note: "Rental apartments — MJC diversified portfolio." },
+      { name: "Wolverine Country Club Estates", location: "Macomb Township", lat: 42.6615, lng: -82.9930,
+        price: "~$400K–$600K", sqft: "Var.", note: "MJC builds alongside Lombardo in same master area." },
+      { name: "Preston Corners Manors (MJC)", location: "Shelby Township", lat: 42.6870, lng: -83.0510,
+        price: "~$450K–$650K", sqft: "Var.", note: "Near Lombardo's Preston Corners." },
+      { name: "Oakland Township Community", location: "Oakland Township, Oakland County", lat: 42.7175, lng: -83.1520,
+        price: "~$500K–$800K", sqft: "Var.", note: "Oakland County luxury tier." },
+      { name: "Clinton Township Community", location: "Clinton Township, Macomb County", lat: 42.5868, lng: -82.9199,
+        price: "~$352K–$550K", sqft: "Var.", note: "Broad price range including entry-level." },
+      { name: "Washington Township Community", location: "Washington Township, Macomb County", lat: 42.7420, lng: -83.0370,
+        price: "~$450K–$700K", sqft: "Var.", note: "Northern Macomb County." },
+    ],
+    notes: "HQ: 46600 Romeo Plank Rd, Macomb MI. Founded 1972. Top 100 builder nationally. Serves 15+ municipalities across tri-county. Also develops rental apartments.",
+    highlights: ["Founded 1972, HQ Macomb Township", "$352K–$973K across all product types", "Walden Parc rentals from $2,400/mo", "Serves 15+ municipalities"],
+  },
+  {
+    name: "Vitale Companies", type: "Local/Custom", category: "local",
+    counties: ["macomb","oakland"], color: "#4a6741",
+    priceMin: 430000, priceMax: 800000, priceDisplay: "$430K – $800K+",
+    homeTypes: "Single-Family (Ranches, Colonials, Split-Levels)",
+    communities: [
+      { name: "Christenbury Creek", location: "Macomb Township", lat: 42.6590, lng: -82.9050,
+        price: "$440s – $580s", sqft: "2,330–3,300+ sq ft", note: "Active Macomb Twp community." },
+      { name: "Copper Hills", location: "Addison Township, Oakland County", lat: 42.7260, lng: -83.1870,
+        price: "$430s – $530s", sqft: "2,330–3,300 sq ft", note: "Providence Colonial & Stratford Ranch available." },
+      { name: "Pinebrook", location: "Shelby Township, Macomb County", lat: 42.6890, lng: -83.0590,
+        price: "Upper $400s", sqft: "2,411 sq ft", note: "Stratford Ranch plan." },
+      { name: "Estates of Highland Hills ★ Reserv.", location: "Bruce Township — S of 33 Mile, W of Fisher Rd", lat: 42.8110, lng: -83.0350,
+        price: "TBD — Est. $600K+", sqft: "1.5+ acre lots, 25 homesites", note: "Taking reservations. Private, estate-sized lots." },
+      { name: "Greystone Estates", location: "Macomb County — N of 31 Mile, E of Mound Rd", lat: 42.7920, lng: -83.0550,
+        price: "~$550K–$750K", sqft: "Var.", note: "Greystone golf course views." },
+    ],
+    notes: "Semi-custom approach. Christenbury Creek active in Macomb Twp. Copper Hills in Addison Twp (Oakland). Highland Hills taking reservations — 25 lots, 1.5+ acres each in Bruce Twp.",
+    highlights: ["Braxton Split-Level: 3,214 sq ft, upper $500s", "Highland Hills: 1.5-acre lots, reservations open", "Oakland County: Copper Hills Addison Twp $430s–$530s"],
+  },
+  {
+    name: "Lassale Homes", type: "Local Custom", category: "local",
+    counties: ["macomb","oakland"], color: "#5a3e6e",
+    priceMin: 450000, priceMax: 900000, priceDisplay: "$450K – $900K+",
+    homeTypes: "Custom Single-Family",
+    communities: [
+      { name: "Clinton Township Projects", location: "Clinton Township, Macomb County", lat: 42.5940, lng: -82.9270,
+        price: "$450K+", sqft: "Custom", note: "Custom builds on select sites." },
+      { name: "Macomb Township Projects", location: "Macomb Township", lat: 42.6560, lng: -82.9010,
+        price: "$500K+", sqft: "Custom", note: "Active custom builds." },
+      { name: "Oakland Township Projects", location: "Oakland Township, Oakland County", lat: 42.7210, lng: -83.1640,
+        price: "$600K+", sqft: "Custom", note: "Oakland County luxury custom." },
+      { name: "Washington Township Projects", location: "Washington Township, Macomb County", lat: 42.7460, lng: -83.0560,
+        price: "$500K+", sqft: "Custom", note: "Northern Macomb presence." },
+    ],
+    notes: "Sterling Heights-based. Michigan's Premier Custom Home Builder — rich architectural character. Service area: Clinton, Macomb, Oakland, Washington Twps.",
+    highlights: ["Michigan's Premier Custom Home Builder", "Rich architectural detail & character", "Service: Clinton, Macomb, Oakland, Washington Twps"],
+  },
+  {
+    name: "Acadia Homes", type: "Local/Regional", category: "local",
+    counties: ["macomb"], color: "#d4812a",
+    priceMin: 380000, priceMax: 620000, priceDisplay: "$380K – $620K",
+    homeTypes: "Single-Family, Custom",
+    communities: [
+      { name: "Mistwood Estates", location: "Macomb Township", lat: 42.6695, lng: -82.9110,
+        price: "~$400K–$550K", sqft: "Var.", note: "Move-in ready + custom options." },
+      { name: "Wolverine North", location: "Macomb Township", lat: 42.6730, lng: -82.9220,
+        price: "~$400K–$560K", sqft: "Var.", note: "Select move-in ready homes." },
+      { name: "Residences at Legacy Village", location: "Shelby Township", lat: 42.6650, lng: -83.0460,
+        price: "~$420K–$620K", sqft: "Var.", note: "Future phases planned." },
+      { name: "Partridge Creek Area", location: "Macomb Township — near Partridge Creek Mall", lat: 42.6620, lng: -82.9010,
+        price: "~$380K–$550K", sqft: "Var.", note: "Convenient retail access." },
+    ],
+    notes: "Macomb County specialist since inception. Mistwood & Wolverine North in Macomb Twp. Legacy Village Shelby Twp (future phases planned). Direct builder access, strong reviews.",
+    highlights: ["Macomb County exclusive focus", "Mistwood: move-in ready + custom", "Legacy Village: Shelby Twp, future phases"],
+  },
+  {
+    name: "Cherry Creek Building", type: "Local/Regional", category: "local",
+    counties: ["macomb"], color: "#c94040",
+    priceMin: 330000, priceMax: 580000, priceDisplay: "$330K – $580K",
+    homeTypes: "Single-Family",
+    communities: [
+      { name: "Victoria Park Estates", location: "Richmond, Macomb County — N of Division, W of Main", lat: 42.8086, lng: -82.7622,
+        price: "~$330K–$480K", sqft: "Var.", note: "Downtown Richmond location." },
+      { name: "West Richmond Estates", location: "Richmond, Macomb County — S of Division, W of Main", lat: 42.8040, lng: -82.7700,
+        price: "~$330K–$460K", sqft: "Var.", note: "Second Richmond community." },
+      { name: "Encore Estates of Shelby", location: "Shelby Township — N side of 25 Mile, W of Jewell Rd", lat: 42.6860, lng: -83.0730,
+        price: "~$400K–$580K", sqft: "Var.", note: "Shelby Township active community." },
+    ],
+    notes: "Macomb County community builder focused on Richmond and Shelby Township. Three active communities. Great school districts and community amenities.",
+    highlights: ["Encore Estates Shelby: 25 Mile Rd", "Victoria Park & West Richmond: downtown Richmond", "Entry-level Macomb pricing from $330K"],
+  },
+  {
+    name: "DM Homes", type: "Local Custom", category: "local",
+    counties: ["macomb","oakland"], color: "#3a7a6a",
+    priceMin: 550000, priceMax: 800000, priceDisplay: "$550K – $800K+",
+    homeTypes: "Custom Single-Family",
+    communities: [
+      { name: "Saddlebrook Orchards", location: "Rochester Hills — N side Auburn Rd between Crooks & Livernois", lat: 42.6810, lng: -83.1500,
+        price: "Low–Mid $600s", sqft: "Ranch ~2,000 / Colonial 2,500–3,000", note: "10 homesites only. Avondale School District. Under construction." },
+      { name: "Greystone Estates (DM)", location: "Macomb Township — E of Mound Rd, N of 31 Mile", lat: 42.7940, lng: -83.0530,
+        price: "~$600K–$800K", sqft: "Var.", note: "Greystone golf course views. Exclusive spot near Romeo." },
+      { name: "Preston Corners (DM)", location: "Shelby Township — Schoenherr btw 25 & 26 Mile", lat: 42.6900, lng: -83.0500,
+        price: "~$550K–$750K", sqft: "Var.", note: "Most recent DM Homes community." },
+      { name: "Estates at Seven Lakes ★ Coming Soon", location: "Oakland County area", lat: 42.7100, lng: -83.4200,
+        price: "TBD", sqft: "Var.", note: "Coming soon — details limited." },
+    ],
+    notes: "Local custom builder active in Oakland and Macomb Counties. Saddlebrook Orchards in Rochester Hills (10 lots only, Avondale Schools, low–mid $600s). Also building Greystone Estates near Romeo and Preston Corners in Shelby Twp.",
+    highlights: ["Saddlebrook Orchards: 10 lots, Rochester Hills low-mid $600s", "Greystone Estates: golf course views near Romeo", "Small-volume, high-quality custom approach"],
+  },
+  {
+    name: "Vitale Building Group", type: "Local Custom", category: "local",
+    counties: ["macomb","oakland"], color: "#2a7a5c",
+    priceMin: 250000, priceMax: 750000, priceDisplay: "$250K – $750K",
+    homeTypes: "Single-Family (Custom)",
+    communities: [
+      { name: "Camelot Commons", location: "Oakland/Macomb border area", lat: 42.7090, lng: -83.0820,
+        price: "$350K–$600K", sqft: "Var.", note: "Custom offsite available." },
+      { name: "North Pointe Estates", location: "Oakland/Macomb area", lat: 42.7160, lng: -83.0640,
+        price: "$400K–$650K", sqft: "Var.", note: "Custom community." },
+      { name: "Penzien Estates", location: "Oakland/Macomb area", lat: 42.7020, lng: -83.0950,
+        price: "$350K–$600K", sqft: "Var.", note: "Custom community." },
+      { name: "Royal Park Estates", location: "Oakland/Macomb area", lat: 42.6980, lng: -83.0780,
+        price: "$400K–$650K", sqft: "Var.", note: "Royal Park Ranch/Split plan featured." },
+      { name: "Windridge Estates", location: "Oakland/Macomb area", lat: 42.7130, lng: -83.0700,
+        price: "$350K–$650K", sqft: "Var.", note: "Custom community." },
+    ],
+    notes: "5 active custom communities on the Oakland/Macomb border. Custom offsite building program available. $250K–$750K range. Oakland County's premier RE, construction & design firm.",
+    highlights: ["5 active communities — Oakland/Macomb border", "Custom offsite build-on-your-lot program", "Broadest price range in the market"],
+  },
+  {
+    name: "Robertson Brothers", type: "Regional", category: "local",
+    counties: ["oakland"], color: "#8a4a3a",
+    priceMin: 400000, priceMax: 800000, priceDisplay: "$400K – $800K",
+    homeTypes: "Single-Family",
+    communities: [
+      { name: "Ingomar Farms", location: "Commerce Township, Oakland County", lat: 42.6290, lng: -83.3750,
+        price: "$400K–$650K", sqft: "Var.", note: "Major Oakland community." },
+      { name: "Hidden Lake Estates", location: "Commerce Township / West Bloomfield area", lat: 42.6680, lng: -83.4120,
+        price: "$500K–$800K", sqft: "Var.", note: "Lakefront/lake-area community." },
+      { name: "Hills & Shores at Willow Lake", location: "Oakland County", lat: 42.6520, lng: -83.3960,
+        price: "$500K–$750K", sqft: "Var.", note: "Water-adjacent community." },
+    ],
+    notes: "Major Oakland County builder. Listed as one of the top Oakland County builders by NewHomeSource. Strong western Oakland County presence (Commerce, West Bloomfield area).",
+    highlights: ["Top Oakland County builder", "Ingomar Farms, Hidden Lake Estates", "Hills & Shores at Willow Lake"],
+  },
+  {
+    name: "Newmark Homes", type: "Regional", category: "local",
+    counties: ["macomb","oakland"], color: "#3a5a8a",
+    priceMin: 350000, priceMax: 750000, priceDisplay: "$350K – $750K",
+    homeTypes: "Single-Family, Communities",
+    communities: [
+      { name: "Macomb County Community", location: "Macomb County", lat: 42.6510, lng: -82.9560,
+        price: "$350K–$600K", sqft: "Var.", note: "25-year SE Michigan builder." },
+      { name: "Oakland County Community", location: "Oakland County", lat: 42.6850, lng: -83.2340,
+        price: "$400K–$750K", sqft: "Var.", note: "Premier neighborhoods." },
+    ],
+    notes: "25-year trusted builder across Macomb & Oakland Counties. SE Michigan specialist focused on premier community vision.",
+    highlights: ["25 years in SE Michigan", "Active across Macomb & Oakland", "Premier neighborhood focus"],
+  },
+  {
+    name: "Sequoia Homes", type: "Local Custom", category: "local",
+    counties: ["macomb"], color: "#6a4a28",
+    priceMin: 380000, priceMax: 700000, priceDisplay: "$380K – $700K",
+    homeTypes: "Single-Family",
+    communities: [
+      { name: "Monarch Estates", location: "Macomb Township area", lat: 42.6760, lng: -82.8960,
+        price: "$380K–$700K", sqft: "Var.", note: "Highly rated on Houzz." },
+    ],
+    notes: "Small custom builder. Monarch Estates. High customer satisfaction. Personal builder experience.",
+    highlights: ["Monarch Estates — Macomb area", "Highly rated reviews on Houzz", "Small-volume, personal experience"],
+  },
+];
+
+const INSIGHTS = [
+  { icon:"📈", title:"Market Trajectory", body:"<strong>Macomb County median new construction: ~$432K–$516K</strong> (up 6% YoY as of early 2026). Oakland County luxury averages $600K–$900K. Stoney Creek Crossing shows the $689K+ Rochester Schools premium commands strong demand." },
+  { icon:"🏘", title:"Lombardo Dominates Oakland Twp", body:"Lombardo's <strong>Stoney Creek Crossing</strong> (Oakland Twp, Rochester Schools) is the standout 2025–2026 launch — 140 homes on 250 acres from $689,500. This is the <strong>most significant new Oakland County community</strong> to watch as a direct competitive benchmark." },
+  { icon:"🎯", title:"Macomb Township Hotspot", body:"<strong>Macomb Township is the epicenter</strong> with 8+ builders active simultaneously. The <strong>23 Mile corridor</strong> is the most competitive stretch — Pulte's Corners at Cherry Glen, Lombardo's Wolverine Estates, Windemere Farms, MJC, Acadia, and Vitale all active." },
+  { icon:"🌿", title:"Rochester Schools Premium", body:"<strong>Rochester Community Schools command a significant price premium</strong>. Lombardo's Stoney Creek Crossing starts at $689,500 vs. comparable homes in other townships at $450K–$550K. DM Homes' Saddlebrook Orchards in Avondale Schools sells in the low–mid $600s. School district is a top pricing driver." },
+  { icon:"🏗", title:"Ranch/Low-Maintenance Trend", body:"Ranch condos and low-maintenance communities are the hottest product type. <strong>Pulte's Corners at Cherry Glen</strong> (100 ranch units), <strong>Lombardo's Windemere Farms II</strong>, and <strong>Toll Brothers' Altair Ridge</strong> all specifically launched for this demand." },
+  { icon:"💡", title:"Northern Macomb Opportunity", body:"<strong>Washington Township, Bruce Township, and Richmond</strong> are the least saturated. Cherry Creek (Richmond), Vitale (Highland Hills/Bruce Twp), and M/I Homes are early movers. Lowest competition per square mile in the two-county area." },
+  { icon:"⚠️", title:"Incentive Wars Heating Up", body:"National builders are offering: <strong>rate buydowns, $10K+ closing credits, appliance packages, free landscaping allowances</strong>. Pulte, Toll Brothers, and M/I Homes all ran active incentive campaigns in spring 2026. Expect buyers to negotiate hard." },
+  { icon:"🔭", title:"Pipeline Watch", body:"<strong>Toll Brothers Altair Ridge (Orion Twp)</strong>: summer 2026, mid-$400Ks. <strong>M/I Homes Olejnik Acres (Macomb Twp)</strong>: coming soon, Card Rd. <strong>Vitale Highland Hills (Bruce Twp)</strong>: 25 lots, reservations open. <strong>DM Homes Estates at Seven Lakes</strong>: coming soon Oakland County." },
+];
+
+// ── MAP INIT ─────────────────────────────────────────────────────────────
+const map = L.map('live-map', { zoomControl: true }).setView([42.720, -83.060], 10);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a> contributors',
+  maxZoom: 19
+}).addTo(map);
+
+const markerGroups = {};
+const allMarkers = [];
+
+function makeIcon(color, isStar) {
+  const ring = isStar ? `<circle cx="14" cy="14" r="11" fill="none" stroke="${color}" stroke-width="2" opacity="0.4"/>` : '';
+  const star = isStar ? `<text x="14" y="18" text-anchor="middle" font-size="9" fill="white">★</text>` : `<circle cx="14" cy="14" r="5" fill="white" opacity="0.85"/>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 40" width="28" height="40">
+    ${ring}
+    <path d="M14 0C6.27 0 0 6.27 0 14c0 10.5 14 24 14 24S28 24.5 28 14C28 6.27 21.73 0 14 0z" fill="${color}" stroke="white" stroke-width="1.5"/>
+    ${star}
+  </svg>`;
+  return L.divIcon({ html: svg, className: '', iconSize: [28,40], iconAnchor: [14,40], popupAnchor: [0,-42] });
+}
+
+BUILDERS.forEach(b => {
+  markerGroups[b.name] = [];
+  b.communities.forEach(c => {
+    const isStar = c.name.includes('★');
+    const marker = L.marker([c.lat, c.lng], { icon: makeIcon(b.color, isStar) });
+    const popup = `<div class="pop-inner">
+      <div class="pop-builder" style="border-bottom-color:${b.color}55;">${b.name}</div>
+      <div class="pop-community">${c.name.replace('★','').trim()}</div>
+      <div class="pop-row"><span class="pop-label">Location</span><span class="pop-val">${c.location}</span></div>
+      <div class="pop-row"><span class="pop-label">Price</span><span class="pop-val" style="color:#e8c06a;">${c.price}</span></div>
+      <div class="pop-row"><span class="pop-label">Size</span><span class="pop-val">${c.sqft}</span></div>
+      <div class="pop-row"><span class="pop-label">Type</span><span class="pop-val">${b.homeTypes}</span></div>
+      <div class="pop-note">${c.note}</div>
+    </div>`;
+    marker.bindPopup(popup, { maxWidth: 300 });
+    marker.addTo(map);
+    markerGroups[b.name].push(marker);
+    allMarkers.push({ marker, builder: b });
+  });
+});
+
+function mapFilterAll(btn) {
+  document.querySelectorAll('.map-filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  allMarkers.forEach(({marker}) => { if (!map.hasLayer(marker)) marker.addTo(map); });
+  document.querySelectorAll('.legend-item').forEach(li=>li.classList.remove('dimmed'));
+}
+function mapFilter(type, btn) {
+  document.querySelectorAll('.map-filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  allMarkers.forEach(({marker, builder}) => {
+    let show = false;
+    if (type==='macomb') show = builder.counties.includes('macomb');
+    else if (type==='oakland') show = builder.counties.includes('oakland');
+    else if (type==='national') show = builder.category==='national';
+    else if (type==='local') show = builder.category==='local';
+    show ? (map.hasLayer(marker)||marker.addTo(map)) : (map.hasLayer(marker)&&map.removeLayer(marker));
+  });
+}
+
+function renderLegend() {
+  document.getElementById('mapLegend').innerHTML =
+    `<span style="font-size:0.66rem;color:#888;text-transform:uppercase;letter-spacing:1px;align-self:center;">Toggle:</span>` +
+    BUILDERS.map(b=>`<div class="legend-item" onclick="toggleLegend('${b.name}',this)" title="${b.priceDisplay}">
+      <div class="legend-dot" style="background:${b.color}"></div><span>${b.name}</span>
+    </div>`).join('') +
+    `<span style="font-size:0.66rem;color:#aaa;align-self:center;margin-left:8px;">★ = Coming Soon / Key Community</span>`;
+}
+function toggleLegend(name, el) {
+  if (!el.classList.contains('dimmed')) {
+    el.classList.add('dimmed');
+    markerGroups[name].forEach(m => map.hasLayer(m) && map.removeLayer(m));
+  } else {
+    el.classList.remove('dimmed');
+    markerGroups[name].forEach(m => !map.hasLayer(m) && m.addTo(map));
+  }
+}
+
+// ── BUILDER CARDS ──────────────────────────────────────────────────────────
+function renderBuilderCards(filter='all') {
+  const filtered = BUILDERS.filter(b => {
+    if (filter==='all') return true;
+    if (filter==='macomb') return b.counties.includes('macomb');
+    if (filter==='oakland') return b.counties.includes('oakland');
+    if (filter==='both') return b.counties.includes('macomb') && b.counties.includes('oakland');
+    if (filter==='national') return b.category==='national';
+    if (filter==='local') return b.category==='local';
+    return true;
+  });
+  document.getElementById('builderGrid').innerHTML = filtered.map(b => {
+    const badges = b.counties.map(c=>`<span class="county-badge badge-${b.counties.length>1?'both':c}">${c.charAt(0).toUpperCase()+c.slice(1)}</span>`).join('');
+    return `<div class="builder-card">
+      <div class="builder-card-header">
+        <div class="builder-color-bar" style="background:${b.color}"></div>
+        <div><div class="builder-card-name">${b.name}</div><div class="builder-card-type">${b.type} · ${badges}</div></div>
+      </div>
+      <div class="builder-card-body">
+        <div class="card-stat-row">
+          <div class="card-stat"><div class="card-stat-label">Price Range</div><div class="card-stat-value">${b.priceDisplay}</div></div>
+          <div class="card-stat"><div class="card-stat-label">Communities</div><div class="card-stat-value">${b.communities.length}</div></div>
+        </div>
+        <div class="card-locations"><strong>Active Communities</strong>${b.communities.map(c=>`• <strong>${c.name.replace('★','★').trim()}</strong> — ${c.location}<br><span style="color:#888;font-size:0.69rem;margin-left:8px;">${c.price} · ${c.sqft}</span>`).join('<br>')}</div>
+        <div class="card-notes">${b.notes}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function filterCards(filter, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderBuilderCards(filter);
+}
+
+// ── TABLE ──────────────────────────────────────────────────────────────────
+function renderTable() {
+  document.getElementById('tableBody').innerHTML = BUILDERS.map(b => {
+    const badges = b.counties.map(c=>`<span class="county-badge badge-${b.counties.length>1?'both':c}">${c.charAt(0).toUpperCase()+c.slice(1)}</span>`).join(' ');
+    const comms = b.communities.slice(0,3).map(c=>c.name.replace('★','').trim()).join(', ')+(b.communities.length>3?` +${b.communities.length-3} more`:'');
+    return `<tr>
+      <td><div class="builder-name-cell"><div class="dot" style="background:${b.color}"></div>${b.name}</div></td>
+      <td style="font-size:0.75rem;">${b.type}</td>
+      <td>${badges}</td>
+      <td style="max-width:220px;font-size:0.74rem;">${comms}</td>
+      <td><span class="price-tag">${b.priceDisplay}</span></td>
+      <td style="font-size:0.74rem;">${b.homeTypes}</td>
+      <td style="max-width:190px;font-size:0.72rem;color:#555;">${b.highlights[0]}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── PRICING ────────────────────────────────────────────────────────────────
+function renderPricing() {
+  const maxP = 1000000;
+  document.getElementById('priceChart').innerHTML = [...BUILDERS].sort((a,b)=>a.priceMin-b.priceMin).map(b => {
+    const s=(b.priceMin/maxP)*100, e=(b.priceMax/maxP)*100, w=e-s;
+    return `<div class="price-bar-row">
+      <div class="price-bar-label">${b.name}</div>
+      <div class="price-bar-track">
+        <div style="position:absolute;left:0;top:0;width:${e}%;height:100%;background:${b.color};opacity:0.1;border-radius:2px;"></div>
+        <div style="position:absolute;left:${s}%;width:${Math.max(w,3)}%;height:100%;background:${b.color};border-radius:2px;display:flex;align-items:center;padding-left:7px;font-size:0.67rem;font-family:'DM Mono',monospace;color:white;font-weight:500;">${b.priceDisplay}</div>
+      </div>
+    </div>`;
+  }).join('');
+  const tiers = [
+    {label:"Entry ($300K–$450K)",min:300000,max:450000,color:"#4a8a4a"},
+    {label:"Mid-Market ($450K–$600K)",min:450000,max:600000,color:"#2e7b7a"},
+    {label:"Move-Up ($600K–$750K)",min:600000,max:750000,color:"#c8962a"},
+    {label:"Luxury ($750K+)",min:750000,max:1100000,color:"#8a2a2a"},
+  ];
+  document.getElementById('tierChart').innerHTML = tiers.map(t => {
+    const inT = BUILDERS.filter(b=>b.priceMax>=t.min&&b.priceMin<=t.max);
+    return `<div style="margin-bottom:14px;">
+      <div style="font-size:0.8rem;font-weight:600;margin-bottom:7px;color:${t.color};">${t.label}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">${inT.map(b=>`<span style="background:${b.color}22;border:1.5px solid ${b.color};color:${b.color};font-size:0.7rem;font-weight:600;padding:3px 10px;border-radius:20px;">${b.name}</span>`).join('')}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── INSIGHTS ────────────────────────────────────────────────────────────────
+function renderInsights() {
+  document.getElementById('insightsGrid').innerHTML = INSIGHTS.map(i=>`
+    <div class="insight-card">
+      <div class="insight-icon">${i.icon}</div>
+      <div class="insight-title">${i.title}</div>
+      <div class="insight-body">${i.body}</div>
+    </div>`).join('');
+}
+
+// ── TABS ────────────────────────────────────────────────────────────────────
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+  if (id==='map') setTimeout(()=>map.invalidateSize(), 80);
+}
+
+// ── INIT ────────────────────────────────────────────────────────────────────
+renderLegend();
+renderBuilderCards();
+renderTable();
+renderPricing();
+renderInsights();
+</script>
+</body>
+</html>
