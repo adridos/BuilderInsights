@@ -1,0 +1,33 @@
+name: Update builder data
+on:
+  schedule:
+    - cron: "17 11 1,15 * *"   # 1st and 15th of each month, ~7am Detroit
+  workflow_dispatch:            # the "Run workflow" button
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: node scripts/test.mjs
+      - run: node scripts/update.mjs
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      - name: Open pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet data/builders.json; then echo "No data changes"; exit 0; fi
+          BR="data-update-$(date +%Y-%m-%d-%H%M)"
+          git config user.name "builder-intel-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git checkout -b "$BR"
+          git add data/builders.json
+          git commit -m "Update builder data $(date +%Y-%m-%d)"
+          git push origin "$BR"
+          gh pr create --title "Builder data update $(date +%Y-%m-%d)" --body-file update-report.md --base "${{ github.event.repository.default_branch }}"

@@ -1,0 +1,1 @@
+{ "name": "builder-intel", "private": true, "type": "module", "scripts": { "update": "node scripts/update.mjs", "test": "node scripts/test.mjs" } }
